@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "omnipull_url_processor"
-version = "1.0.9"
+version = "0.1.0"
 description = "A high-performance URL processor written in Rust for OmniPull"
 requires-python = ">=3.7"
 dependencies = []
