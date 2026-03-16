@@ -3,7 +3,10 @@ name: Build and Publish Rust Extension
 on:
   push:
     branches: [master]
-    tags: ['v*'] # Now every tag in this repo is a Rust release
+    tags: ['v*']
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -18,13 +21,12 @@ jobs:
         with:
           command: build
           args: --release --out dist
-          # REMOVED: working-directory (files are at root now)
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}
-          path: dist # Updated path to root dist
+          path: dist
 
   sdist:
     runs-on: ubuntu-latest
@@ -48,7 +50,7 @@ jobs:
     needs: [build, sdist]
     environment:
       name: pypi
-      url: https://pypi.org/p/omnipull-url-processor
+      url: https://pypi.org/p/omnipull_url_processor
     permissions:
       id-token: write 
     steps:
@@ -57,8 +59,7 @@ jobs:
           pattern: '*'
           merge-multiple: true
           path: dist
-      - name: Publish to PyPI
-        uses: PyO3/maturin-action@v1
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          command: upload
-          args: --non-interactive --skip-existing dist/*
+          packages-dir: dist/
