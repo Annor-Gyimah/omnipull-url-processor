@@ -196,3 +196,4 @@ rust_updater_helper/
 build_nuitka/
 
 
+target/
