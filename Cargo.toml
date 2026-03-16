@@ -1,7 +1,7 @@
 [package]
 name = "omnipull_url_processor"
 version = "0.1.2"
-edition = "2026"
+edition = "2024"
 authors = ["Emmanuel Gyimah Annor"]
 description = "Blazingly fast URL processor for OmniPull Download Manager"
 
