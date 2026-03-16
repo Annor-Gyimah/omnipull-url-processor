@@ -1,28 +1,4 @@
-// use std::fs::OpenOptions;
-// use std::io;
-// use pyo3::prelude::*;
 
-// #[pyfunction]
-// pub fn append_segment(target_path: String, source_path: String) -> PyResult<()> {
-//     // 1. Open Target (Append Mode)
-//     let mut target = OpenOptions::new()
-//         .create(true)
-//         .append(true)
-//         .open(&target_path)?;
-
-//     // 2. Open Source (Read Mode)
-//     let mut source = std::fs::File::open(&source_path)?;
-
-//     // 3. Copy Data
-//     io::copy(&mut source, &mut target)?;
-    
-//     // 4. FORCE FLUSH (The Fix)
-//     // This forces the OS to write everything to disk immediately
-//     // and helps release the lock faster.
-//     target.sync_all()?; 
-
-//     Ok(())
-// }
 
 
 use std::fs::OpenOptions;
