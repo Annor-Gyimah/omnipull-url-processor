@@ -2,8 +2,10 @@ name: Build and Publish Rust Extension
 
 on:
   push:
-    branches: [master]
-    tags: ['v*']
+    tags:
+      - 'v*'
+    branches-ignore:
+      - '**'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -11,6 +13,8 @@ env:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    # Only run if it's a tag OR if it's a push to master that ISN'T a tag
+    if: github.event_name == 'push' && (github.ref_type == 'tag' || github.ref == 'refs/heads/master')
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
