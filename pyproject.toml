@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "omnipull_url_processor"
-version = "0.1.2"
+version = "0.1.3"
 description = "A high-performance URL processor written in Rust for OmniPull"
 requires-python = ">=3.7"
 dependencies = []
@@ -13,4 +13,4 @@ dependencies = []
 # This points to where your Cargo.toml is located relative to pyproject.toml
 # If they are in the same folder, you can usually omit this or use "."
 manifest-path = "Cargo.toml"
-module-name = "rust_url_processor"
+module-name = "omnipull_url_processor"
