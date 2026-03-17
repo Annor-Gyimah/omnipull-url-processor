@@ -18,6 +18,8 @@ pub struct UrlInfo {
     pub content_type: Option<String>,
     pub real_url: Option<String>,
     pub error_msg: Option<String>,
+    pub status_code: u16,
+    pub is_direct: bool,
 }
 
 const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -65,6 +67,8 @@ fn process_tiktok(url: &str, timeout: u64) -> Result<UrlInfo> {
     let resp = agent.get(&api_url)
         .set("User-Agent", USER_AGENT)
         .call()?;
+
+    let status_code = resp.status();
     
     let json: Value = serde_json::from_reader(resp.into_reader())
         .context("Failed to parse TikTok API JSON")?;
@@ -78,6 +82,8 @@ fn process_tiktok(url: &str, timeout: u64) -> Result<UrlInfo> {
             content_type: Some("video/mp4".into()),
             real_url: data["play"].as_str().map(|s: &str| s.to_string()),
             error_msg: None,
+            status_code,
+            is_direct: true,
         })
     } else {
         Ok(UrlInfo {
@@ -87,6 +93,8 @@ fn process_tiktok(url: &str, timeout: u64) -> Result<UrlInfo> {
             content_type: None,
             real_url: None,
             error_msg: Some(json["msg"].as_str().unwrap_or("TikTok API Error").to_string()),
+            status_code,
+            is_direct: false,
         })
     }
 }
@@ -113,6 +121,7 @@ fn process_instagram(url: &str, timeout: u64, referer: Option<String>) -> Result
 
     let mut size: Option<u64> = None;
     let mut content_type: Option<String> = None;
+    let mut status_code: u16 = 0;
     
     if is_cdn {
         // CRITICAL FIX: Use the referrer passed from the background script
@@ -123,6 +132,7 @@ fn process_instagram(url: &str, timeout: u64, referer: Option<String>) -> Result
             .set("Referer", final_referer)
             .set("User-Agent", USER_AGENT)
             .call() {
+            status_code = resp.status();
             size = resp.header("Content-Length").and_then(|s| s.parse::<u64>().ok());
             content_type = resp.header("Content-Type").map(|s| s.to_string());
             
@@ -139,6 +149,8 @@ fn process_instagram(url: &str, timeout: u64, referer: Option<String>) -> Result
         content_type: content_type.or(Some(if is_cdn { "image/jpeg".into() } else { "video/mp4".into() })),
         real_url: Some(url.to_string()),
         error_msg: None,
+        status_code,
+        is_direct: true,
     })
 }
 
@@ -160,6 +172,8 @@ fn process_kwik(url: &str, timeout: u64, referer: Option<String>) -> Result<UrlI
         .call()
         .context("Failed to connect to Kwik Vault")?;
 
+    let status_code = resp.status();
+
     let parsed = Url::parse(url)?;
     
     // Get the filename from the ?file= parameter
@@ -175,6 +189,8 @@ fn process_kwik(url: &str, timeout: u64, referer: Option<String>) -> Result<UrlI
         content_type: Some("video/mp4".into()),
         real_url: Some(url.to_string()),
         error_msg: None,
+        status_code,
+        is_direct: true,
     })
 }
 
@@ -193,6 +209,8 @@ fn process_kwik_vault(url: &str, timeout: u64, referer: Option<String>) -> Resul
         .call()
         .context("Vault connection failed")?;
 
+    let status_code = resp.status();
+
     let parsed = Url::parse(url)?;
     
     // Extract the pretty filename from '?file=...'
@@ -208,6 +226,8 @@ fn process_kwik_vault(url: &str, timeout: u64, referer: Option<String>) -> Resul
         content_type: Some("video/mp4".into()),
         real_url: Some(url.to_string()),
         error_msg: None,
+        status_code,
+        is_direct: true,
     })
 }
 
@@ -237,10 +257,13 @@ fn process_direct(url: &str, timeout: u64, referer: Option<String>, parsed: &Url
         Err(e) => return Ok(UrlInfo { 
             is_supported: false, filename: None, size: None, content_type: None,
             real_url: None,
-            error_msg: Some(format!("HTTP Error: {}", e)) 
+            error_msg: Some(format!("HTTP Error: {}", e)),
+            status_code: 0,
+            is_direct: false,
         }),
     };
 
+    let status_code = resp.status();
     let content_type = resp.header("content-type").map(|s| s.to_string());
     
     let size = if let Some(cr) = resp.header("content-range") {
@@ -257,15 +280,17 @@ fn process_direct(url: &str, timeout: u64, referer: Option<String>, parsed: &Url
             .map(|s| urlencoding::decode(s).unwrap_or(s.into()).to_string())
     };
 
-    let (supported, reason) = is_direct_file(content_type.as_deref(), size);
+    let (is_direct, reason) = is_direct_file(content_type.as_deref(), size);
 
     Ok(UrlInfo {
-        is_supported: supported,
+        is_supported: is_direct,
         filename,
         size,
         content_type,
         real_url: Some(url.to_string()),
         error_msg: reason,
+        status_code,
+        is_direct,
     })
 }
 
